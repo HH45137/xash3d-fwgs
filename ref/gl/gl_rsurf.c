@@ -177,25 +177,7 @@ static void SubdividePolygon_r( model_t *loadmodel, msurface_t *warpface, int nu
 		poly->verts[i][3] = s;
 		poly->verts[i][4] = t;
 
-		// for speed reasons
-		if( !FBitSet( warpface->flags, SURF_DRAWTURB ))
-		{
-			// lightmap texture coordinates
-			s = DotProduct( verts, warpinfo->lmvecs[0] ) + warpinfo->lmvecs[0][3];
-			s -= warpinfo->lightmapmins[0];
-			s += warpface->light_s * sample_size;
-			s += sample_size * 0.5f;
-			s /= BLOCK_SIZE * sample_size; //fa->texinfo->texture->width;
-
-			t = DotProduct( verts, warpinfo->lmvecs[1] ) + warpinfo->lmvecs[1][3];
-			t -= warpinfo->lightmapmins[1];
-			t += warpface->light_t * sample_size;
-			t += sample_size * 0.5f;
-			t /= BLOCK_SIZE * sample_size; //fa->texinfo->texture->height;
-
-			poly->verts[i][5] = s;
-			poly->verts[i][6] = t;
-		}
+		// lightmap texcoords for subdivided surfaces will be calculated later
 	}
 }
 
@@ -389,6 +371,53 @@ void GL_BuildPolygonFromSurface( model_t *mod, msurface_t *fa )
 	}
 
 	poly->numverts = lnumverts;
+}
+
+/*
+================
+GL_BuildPolygonFromSurface
+================
+*/
+void GL_BuildLightmapWater( model_t *mod, msurface_t *fa )
+{
+	int		i, lnumverts;
+	mextrasurf_t	*info = fa->info;
+	float		sample_size;
+	float		s, t;
+	glpoly_t		*poly;
+
+	if( !mod || !fa->texinfo || !fa->texinfo->texture )
+		return; // bad polygon ?
+
+	sample_size = gEngfuncs.Mod_SampleSizeForFace( fa );
+
+	for( poly = fa->polys; poly != NULL; poly = poly->next )
+	{
+		lnumverts = poly->numverts;
+
+		for( i = 0; i < lnumverts; i++ )
+		{
+			vec3_t vec;
+
+			VectorCopy( poly->verts[i], vec );
+
+			// lightmap texture coordinates
+			s = DotProduct( vec, info->lmvecs[0] ) + info->lmvecs[0][3];
+			s -= info->lightmapmins[0];
+			s += fa->light_s * sample_size;
+			s += sample_size * 0.5f;
+			s /= BLOCK_SIZE * sample_size; //fa->texinfo->texture->width;
+
+			t = DotProduct( vec, info->lmvecs[1] ) + info->lmvecs[1][3];
+			t -= info->lightmapmins[1];
+			t += fa->light_t * sample_size;
+			t += sample_size * 0.5f;
+			t /= BLOCK_SIZE * sample_size; //fa->texinfo->texture->height;
+
+			poly->verts[i][5] = s;
+			poly->verts[i][6] = t;
+		}
+	}
 }
 
 
@@ -3602,9 +3631,8 @@ void GL_BuildLightmaps( void )
 			GL_CreateSurfaceLightmap( m->surfaces + j, m );
 
 			if( m->surfaces[j].flags & SURF_DRAWTURB )
-				continue;
-
-			GL_BuildPolygonFromSurface( m, m->surfaces + j );
+				GL_BuildLightmapWater( m, m->surfaces + j );
+			else GL_BuildPolygonFromSurface( m, m->surfaces + j );
 		}
 
 		// clearing visframe
