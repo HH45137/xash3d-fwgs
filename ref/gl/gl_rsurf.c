@@ -1173,58 +1173,60 @@ void R_RenderBrushPoly( msurface_t *fa, int cull_type )
 
 		// warp texture, no lightmaps
 		EmitWaterPolys( fa, (cull_type == CULL_BACKSIDE));
-		return;
-	}
-	else GL_Bind( XASH_TEXTURE0, t->gl_texturenum );
-
-	if( t->fb_texturenum )
-	{
-		fa->info->lumachain = fullbright_surfaces[t->fb_texturenum];
-		fullbright_surfaces[t->fb_texturenum] = fa->info;
-		draw_fullbrights = true;
-	}
-
-	if( r_detailtextures.value )
-	{
-		if( glState.isFogEnabled )
-		{
-			// don't apply detail textures for windows in the fog
-			if( RI.currententity->curstate.rendermode != kRenderTransTexture )
-			{
-				if( t->dt_texturenum )
-				{
-					fa->info->detailchain = detail_surfaces[t->dt_texturenum];
-					detail_surfaces[t->dt_texturenum] = fa->info;
-				}
-				else
-				{
-					// draw stub detail texture for underwater surfaces
-					fa->info->detailchain = detail_surfaces[tr.grayTexture];
-					detail_surfaces[tr.grayTexture] = fa->info;
-				}
-				draw_details = true;
-			}
-		}
-		else if( t->dt_texturenum )
-		{
-			fa->info->detailchain = detail_surfaces[t->dt_texturenum];
-			detail_surfaces[t->dt_texturenum] = fa->info;
-			draw_details = true;
-		}
-	}
-
-	DrawGLPoly( fa->polys, 0.0f, 0.0f );
-
-	if( RI.currententity->curstate.rendermode == kRenderNormal )
-	{
-		// batch decals to draw later
-		if( tr.num_draw_decals < MAX_DECAL_SURFS && fa->pdecals )
-			tr.draw_decals[tr.num_draw_decals++] = fa;
 	}
 	else
 	{
-		// if rendermode != kRenderNormal draw decals sequentially
-		DrawSurfaceDecals( fa, true, (cull_type == CULL_BACKSIDE));
+		GL_Bind( XASH_TEXTURE0, t->gl_texturenum );
+
+		if( t->fb_texturenum )
+		{
+			fa->info->lumachain = fullbright_surfaces[t->fb_texturenum];
+			fullbright_surfaces[t->fb_texturenum] = fa->info;
+			draw_fullbrights = true;
+		}
+
+		if( r_detailtextures.value )
+		{
+			if( glState.isFogEnabled )
+			{
+				// don't apply detail textures for windows in the fog
+				if( RI.currententity->curstate.rendermode != kRenderTransTexture )
+				{
+					if( t->dt_texturenum )
+					{
+						fa->info->detailchain = detail_surfaces[t->dt_texturenum];
+						detail_surfaces[t->dt_texturenum] = fa->info;
+					}
+					else
+					{
+						// draw stub detail texture for underwater surfaces
+						fa->info->detailchain = detail_surfaces[tr.grayTexture];
+						detail_surfaces[tr.grayTexture] = fa->info;
+					}
+					draw_details = true;
+				}
+			}
+			else if( t->dt_texturenum )
+			{
+				fa->info->detailchain = detail_surfaces[t->dt_texturenum];
+				detail_surfaces[t->dt_texturenum] = fa->info;
+				draw_details = true;
+			}
+		}
+
+		DrawGLPoly( fa->polys, 0.0f, 0.0f );
+
+		if( RI.currententity->curstate.rendermode == kRenderNormal )
+		{
+			// batch decals to draw later
+			if( tr.num_draw_decals < MAX_DECAL_SURFS && fa->pdecals )
+				tr.draw_decals[tr.num_draw_decals++] = fa;
+		}
+		else
+		{
+			// if rendermode != kRenderNormal draw decals sequentially
+			DrawSurfaceDecals( fa, true, (cull_type == CULL_BACKSIDE));
+		}
 	}
 
 	if( FBitSet( fa->flags, SURF_DRAWTILED ))
