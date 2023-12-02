@@ -879,14 +879,14 @@ DrawGLPolyChain
 Render lightmaps
 ================
 */
-void DrawGLPolyChain( glpoly_t *p, float soffset, float toffset )
+void DrawGLPolyChain( glpoly_t *p, float soffset, float toffset, int flags )
 {
 	qboolean	dynamic = true;
 
 	if( soffset == 0.0f && toffset == 0.0f )
 		dynamic = false;
 
-	for( ; p != NULL; p = p->chain )
+	for( ; p != NULL; p = FBitSet( flags, SURF_DRAWTURB ) ? p->next : p->chain )
 	{
 		float	*v;
 		int	i;
@@ -964,7 +964,8 @@ void R_BlendLightmaps( void )
 
 			for( surf = gl_lms.lightmap_surfaces[i]; surf != NULL; surf = surf->info->lightmapchain )
 			{
-				if( surf->polys ) DrawGLPolyChain( surf->polys, 0.0f, 0.0f );
+				if( surf->polys )
+					DrawGLPolyChain( surf->polys, 0.0f, 0.0f, surf->flags );
 			}
 		}
 	}
@@ -1009,7 +1010,8 @@ void R_BlendLightmaps( void )
 					{
 						DrawGLPolyChain( drawsurf->polys,
 						( drawsurf->light_s - drawsurf->info->dlight_s ) * ( 1.0f / (float)BLOCK_SIZE ),
-						( drawsurf->light_t - drawsurf->info->dlight_t ) * ( 1.0f / (float)BLOCK_SIZE ));
+						( drawsurf->light_t - drawsurf->info->dlight_t ) * ( 1.0f / (float)BLOCK_SIZE ),
+						drawsurf->flags );
 					}
 				}
 
@@ -1038,7 +1040,8 @@ void R_BlendLightmaps( void )
 			{
 				DrawGLPolyChain( surf->polys,
 				( surf->light_s - surf->info->dlight_s ) * ( 1.0f / (float)BLOCK_SIZE ),
-				( surf->light_t - surf->info->dlight_t ) * ( 1.0f / (float)BLOCK_SIZE ));
+				( surf->light_t - surf->info->dlight_t ) * ( 1.0f / (float)BLOCK_SIZE ),
+				surf->flags );
 			}
 		}
 	}
