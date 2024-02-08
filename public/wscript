@@ -28,6 +28,7 @@ def build(bld):
 			'build': 'tests/test_build.c',
 			'filebase': 'tests/test_filebase.c',
 			'efp': 'tests/test_efp.c',
+			'utflib': 'tests/test_utflib.c',
 		}
 
 		for i in tests:
