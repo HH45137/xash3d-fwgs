@@ -52,7 +52,7 @@ static qboolean R_Init( void )
 
 static const char *R_GetConfigName( void )
 {
-	return NULL;
+	return "vulkan";
 }
 
 static qboolean R_SetDisplayTransform( ref_screen_rotation_t rotate, int x, int y, float scale_x, float scale_y )
@@ -264,6 +264,7 @@ static const byte *GL_TextureData( unsigned int texnum )
 	return NULL;
 }
 
+// It must be implemented first in new renderer, because the pfnPIC_Load function uses it!
 static int GL_LoadTexture( const char *name, const byte *buf, size_t size, int flags )
 {
 	return 0;
