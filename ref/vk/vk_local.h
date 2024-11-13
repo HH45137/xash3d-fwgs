@@ -1,5 +1,5 @@
 /*
-gl_local.h - renderer local declarations
+vk_local.h - renderer local declarations
 Copyright (C) 2010 Uncle Mike
 
 This program is free software: you can redistribute it and/or modify
@@ -31,6 +31,7 @@ GNU General Public License for more details.
 #include "com_strings.h"
 #include "pm_movevars.h"
 #include "cvardef.h"
+#include <vulkan/vulkan.h>
 typedef struct mip_s mip_t;
 
 typedef int fixed8_t;

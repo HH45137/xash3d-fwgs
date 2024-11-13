@@ -28,6 +28,7 @@ typedef struct
 	qboolean		initialized;	// OpenGL subsystem started
 	qboolean		extended;		// extended context allows to GL_Debug
 	qboolean        software;
+	qboolean 		vulkan;
 } glwstate_t;
 
 extern glwstate_t glw_state;

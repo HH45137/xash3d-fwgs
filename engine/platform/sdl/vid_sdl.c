@@ -861,8 +861,13 @@ qboolean VID_CreateWindow( int width, int height, window_mode_t window_mode )
 	if( window_mode != WINDOW_MODE_WINDOWED )
 		SetBits( flags, SDL_FULLSCREEN|SDL_HWSURFACE );
 
-	if( !glw_state.software )
+	if( !glw_state.software && !glw_state.vulkan )
 		SetBits( flags, SDL_OPENGL );
+
+	if( glw_state.vulkan ) {
+		SetBits( flags, SDL_WINDOW_VULKAN );
+		SDL_Vulkan_LoadLibrary(NULL);
+	}
 
 	if( !VID_CreateWindowWithSafeGL( wndname, xpos, ypos, width, height, wndFlags ))
 		return false;
@@ -1062,6 +1067,7 @@ qboolean R_Init_Video( const int type )
 		}
 		break;
 	case REF_VK:
+		glw_state.vulkan = true;
 		break;
 	default:
 		Host_Error( "Can't initialize unknown context type %d!\n", type );
