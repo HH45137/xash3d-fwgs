@@ -637,6 +637,9 @@ static void R_CollectRendererNames( void )
 #if XASH_REF_SOFT_ENABLED
 		"soft",
 #endif
+#if XASH_REF_VK_ENABLED
+		"vk",
+#endif
 	};
 
 	// ordering is important here too!
@@ -659,6 +662,9 @@ static void R_CollectRendererNames( void )
 #endif
 #if XASH_REF_SOFT_ENABLED
 		"Software",
+#endif
+#if XASH_REF_SOFT_ENABLED
+		"Vulkan",
 #endif
 	};
 
