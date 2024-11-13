@@ -31,7 +31,7 @@ GNU General Public License for more details.
 #include "com_strings.h"
 #include "pm_movevars.h"
 #include "cvardef.h"
-#include <vulkan/vulkan.h>
+#include "vk_until.h"
 typedef struct mip_s mip_t;
 
 typedef int fixed8_t;

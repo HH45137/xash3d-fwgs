@@ -1,5 +1,5 @@
 /*
-r_context.c -- null renderer context
+vk_context.c -- vulkan renderer context
 Copyright (C) 2023-2024 a1batross
 
 This program is free software: you can redistribute it and/or modify
@@ -14,12 +14,6 @@ GNU General Public License for more details.
 */
 
 #include "vk_local.h"
-
-/*
- * this initially was made to be able to run full client
- * in hazardous^Wheadless environments
- * but might be a starting point for new renderers as well
- */
 
 static ref_api_t      gEngfuncs;
 static ref_globals_t *gpGlobals;
@@ -47,6 +41,9 @@ static void R_SimpleStubBool( qboolean unused )
 static qboolean R_Init( void )
 {
 	gEngfuncs.R_Init_Video( REF_VK );
+
+	VkInstance instance = Vk_CreateInstance(NULL);
+
 	return true;
 }
 

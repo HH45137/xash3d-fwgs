@@ -6,16 +6,18 @@ from waflib import Logs
 import os
 
 top = '.'
+vk_sdk_dir = os.environ.get('VULKAN_SDK')
 
 def options(opt):
 	return
 
 def configure(conf):
-	conf.check_cc(lib='C:/VulkanSDK/1.3.296.0/Lib/vulkan-1')
+	conf.check(lib=[f'{vk_sdk_dir}/Lib/vulkan-1'], uselib_store='VK')
+	conf.check(lib=[f'{vk_sdk_dir}/Lib/SDL2'], uselib_store='SDL2')
 	return
 
 def build(bld):
-	libs = [ 'engine_includes', 'werror' ]
+	libs = [ 'engine_includes', 'werror', 'VK', 'SDL2']
 	# on PSVita do not link any libraries that are already in the main executable, but add the includes target
 	if bld.env.DEST_OS == 'psvita':
 		libs += [ 'sdk_includes' ]
@@ -26,8 +28,7 @@ def build(bld):
 		target   = 'ref_vk',
 		includes = [
 			'.',
-			'C:/VulkanSDK/1.3.296.0/Include/',
-			# 'C:/VulkanSDK/1.3.296.0/Include/SDL2/',
+			f'{vk_sdk_dir}/Include/'
 		],
 		defines  = 'REF_DLL=1',
 		use      = libs,
