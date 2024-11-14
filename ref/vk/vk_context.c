@@ -41,9 +41,6 @@ static void R_SimpleStubBool( qboolean unused )
 static qboolean R_Init( void )
 {
 	gEngfuncs.R_Init_Video( REF_VK );
-
-	VkInstance instance = Vk_CreateInstance(NULL);
-
 	return true;
 }
 

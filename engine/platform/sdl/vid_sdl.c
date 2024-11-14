@@ -13,7 +13,13 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 */
 #if !XASH_DEDICATED
-#include <SDL.h>
+// #include <SDL.h>
+#include <vulkan/vulkan.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_vulkan.h>
+#include <SDL2/SDL_video.h>
+#include <stdio.h>
+
 #include "common.h"
 #include "client.h"
 #include "vid_common.h"
@@ -37,6 +43,63 @@ struct
 	SDL_Surface *surf;
 	SDL_Surface *win;
 } sw;
+
+VkInstance Vk_CreateInstance( SDL_Window *hWnd )
+{
+	// SDL_Window *hWnd = NULL;
+
+	VkApplicationInfo applicationInfo = {
+		VK_STRUCTURE_TYPE_APPLICATION_INFO,
+		VK_NULL_HANDLE,
+		VK_NULL_HANDLE,
+		0,
+		VK_NULL_HANDLE,
+		0,
+		VK_API_VERSION_1_3};
+
+	const char layerList[][VK_MAX_EXTENSION_NAME_SIZE] = {
+		"VK_LAYER_KHRONOS_validation"};
+	const char *layers[] = {
+		layerList[0]};
+
+	uint32_t extensionNumber = 0;
+	const char **extensions = NULL;
+
+	if (SDL_Vulkan_GetInstanceExtensions(hWnd, &extensionNumber, NULL) != SDL_TRUE)
+	{
+		Sys_Error("Failed to get the number of Vulkan instance extensions: %s\n", SDL_GetError());
+		return NULL;
+	}
+	if (extensionNumber > 0)
+	{
+		extensions = (const char **)malloc(extensionNumber * sizeof(const char *));
+		if (extensions == NULL)
+		{
+			Sys_Error("Failed to allocate memory for Vulkan instance extensions.\n");
+			return NULL;
+		}
+		if (SDL_Vulkan_GetInstanceExtensions(hWnd, &extensionNumber, extensions) != SDL_TRUE)
+		{
+			free(extensions);
+			Sys_Error("Failed to get the Vulkan instance extensions: %s\n", SDL_GetError());
+			return NULL;
+		}
+	}
+
+	VkInstanceCreateInfo instanceCreateInfo = {
+		VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+		VK_NULL_HANDLE,
+		0,
+		&applicationInfo,
+		1,
+		layers,
+		extensionNumber,
+		extensions};
+
+	VkInstance instance;
+	VkResult result = vkCreateInstance(&instanceCreateInfo, VK_NULL_HANDLE, &instance);
+	return instance;
+}
 
 qboolean SW_CreateBuffer( int width, int height, uint *stride, uint *bpp, uint *r, uint *g, uint *b )
 {
@@ -735,6 +798,34 @@ static qboolean VID_CreateWindowWithSafeGL( const char *wndname, int xpos, int y
 	return true;
 }
 
+static qboolean VID_CreateWindowWithVulkan( const char *wndname, int xpos, int ypos, int w, int h, uint32_t flags )
+{
+	uint32_t count = 0;
+	while( true )
+	{
+#if SDL_VERSION_ATLEAST( 2, 0, 0 )
+		host.hWnd = SDL_CreateWindow( wndname, xpos, ypos, w, h, flags );
+#else
+		host.hWnd = sw.surf = SDL_SetVideoMode( width, height, 16, flags );
+#endif
+		// we have window, exit loop
+		if( host.hWnd )
+			break;
+
+		Con_Reportf( S_ERROR "%s: couldn't create '%s' %s\n", __func__, wndname, SDL_GetError());
+
+		if ( count >= 3 )
+		{
+			Con_Reportf("stop create window");
+			return false;
+		}
+
+		// try again create window
+	}
+
+	return true;
+}
+
 /*
 =================
 VID_CreateWindow
@@ -742,6 +833,11 @@ VID_CreateWindow
 */
 qboolean VID_CreateWindow( int width, int height, window_mode_t window_mode )
 {
+	if ( glw_state.vulkan )
+	{
+		return VID_CreateWindowForVulkan( width, height, window_mode );
+	}
+
 	string wndname;
 #if SDL_VERSION_ATLEAST( 2, 0, 0 )
 	qboolean maximized = vid_maximized.value != 0.0f;
@@ -864,13 +960,120 @@ qboolean VID_CreateWindow( int width, int height, window_mode_t window_mode )
 	if( !glw_state.software && !glw_state.vulkan )
 		SetBits( flags, SDL_OPENGL );
 
-	if( glw_state.vulkan ) {
-		SetBits( flags, SDL_WINDOW_VULKAN );
-		SDL_Vulkan_LoadLibrary(NULL);
-	}
-
 	if( !VID_CreateWindowWithSafeGL( wndname, xpos, ypos, width, height, wndFlags ))
 		return false;
+#endif // SDL_VERSION_ATLEAST( 2, 0, 0 )
+
+	VID_SaveWindowSize( width, height, maximized );
+
+	return true;
+}
+
+/*
+=================
+VID_CreateWindowForVulkan
+=================
+*/
+qboolean VID_CreateWindowForVulkan( int width, int height, window_mode_t window_mode )
+{
+	string wndname;
+#if SDL_VERSION_ATLEAST( 2, 0, 0 )
+	qboolean maximized = vid_maximized.value != 0.0f;
+	Uint32 wndFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_MOUSE_FOCUS;
+	int xpos, ypos;
+
+	Q_strncpy( wndname, GI->title, sizeof( wndname ));
+
+	if( vid_highdpi.value )
+		SetBits( wndFlags, SDL_WINDOW_ALLOW_HIGHDPI );
+	if( !glw_state.software && !glw_state.vulkan )
+		SetBits( wndFlags, SDL_WINDOW_OPENGL );
+
+	if( window_mode == WINDOW_MODE_WINDOWED )
+	{
+		SDL_Rect r;
+
+		SetBits( wndFlags, SDL_WINDOW_RESIZABLE );
+		if( maximized )
+			SetBits( wndFlags, SDL_WINDOW_MAXIMIZED );
+
+#if SDL_VERSION_ATLEAST( 2, 0, 5 )
+		if( SDL_GetDisplayUsableBounds( 0, &r ) < 0 &&
+			SDL_GetDisplayBounds( 0, &r ) < 0 )
+#else
+		if( SDL_GetDisplayBounds( 0, &r ) < 0 )
+#endif
+		{
+			Con_Reportf( S_ERROR "%s: SDL_GetDisplayBounds failed: %s\n", __func__, SDL_GetError( ));
+			xpos = SDL_WINDOWPOS_CENTERED;
+			ypos = SDL_WINDOWPOS_CENTERED;
+		}
+		else
+		{
+			xpos = window_xpos.value;
+			ypos = window_ypos.value;
+
+			// don't create window outside of usable display space
+			if( xpos < r.x || xpos + width > r.x + r.w )
+				xpos = SDL_WINDOWPOS_CENTERED;
+
+			if( ypos < r.y || ypos + height > r.y + r.h )
+				ypos = SDL_WINDOWPOS_CENTERED;
+		}
+	}
+	else
+	{
+		if( window_mode == WINDOW_MODE_FULLSCREEN )
+			// need input grab only in true fullscreen mode
+			SetBits( wndFlags, SDL_WINDOW_FULLSCREEN | SDL_WINDOW_INPUT_GRABBED );
+		else
+			SetBits( wndFlags, SDL_WINDOW_FULLSCREEN_DESKTOP );
+		SetBits( wndFlags, SDL_WINDOW_BORDERLESS );
+		xpos = ypos = 0;
+	}
+
+	if( glw_state.vulkan ) {
+		SetBits( wndFlags, SDL_WINDOW_VULKAN );
+		// wndFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN;
+	}
+
+	if( !VID_CreateWindowWithVulkan( wndname, xpos, ypos, width, height, wndFlags ))
+		return false;
+
+	if( glw_state.vulkan ) {
+		SDL_Vulkan_LoadLibrary(NULL);
+		VkInstance instance = Vk_CreateInstance(host.hWnd);
+		if (!instance)
+		{
+			Sys_Error("Vulkan instance create error!");
+		}
+	}
+
+	// update window size if it was maximized, just in case
+	if( FBitSet( SDL_GetWindowFlags( host.hWnd ), SDL_WINDOW_MAXIMIZED|SDL_WINDOW_FULLSCREEN_DESKTOP ) != 0 )
+		SDL_GetWindowSize( host.hWnd, &width, &height );
+
+	if( window_mode != WINDOW_MODE_WINDOWED )
+	{
+		if( !VID_SetScreenResolution( width, height, window_mode ))
+			return false;
+	}
+	else VID_RestoreScreenResolution();
+
+	VID_SetWindowIcon( host.hWnd );
+	SDL_ShowWindow( host.hWnd );
+
+#else // SDL_VERSION_ATLEAST( 2, 0, 0 )
+	Uint32 flags = 0;
+
+	Q_strncpy( wndname, GI->title, sizeof( wndname ));
+
+	if( window_mode != WINDOW_MODE_WINDOWED )
+		SetBits( flags, SDL_FULLSCREEN|SDL_HWSURFACE );
+
+	if( !VID_CreateWindowWithVulkan( wndname, xpos, ypos, width, height, wndFlags ))
+		return false;
+
 #endif // SDL_VERSION_ATLEAST( 2, 0, 0 )
 
 	VID_SaveWindowSize( width, height, maximized );

@@ -7,6 +7,7 @@ from waflib.extras import pthread
 import os
 
 top = '.'
+vk_sdk_dir = os.environ.get('VULKAN_SDK')
 
 def options(opt):
 	grp = opt.add_option_group('Engine options')
@@ -38,6 +39,9 @@ def options(opt):
 	opt.load('sdl2')
 
 def configure(conf):
+	conf.check(lib=[f'{vk_sdk_dir}/Lib/vulkan-1'], uselib_store='VK')
+	conf.check(lib=[f'{vk_sdk_dir}/Lib/SDL2'], uselib_store='SDL2')
+
 	# check for dedicated server build
 	if conf.options.DEDICATED:
 		conf.define('XASH_DEDICATED', 1)
@@ -142,6 +146,7 @@ def build(bld):
 
 	is_cxx_link = False
 	libs = [ 'engine_includes', 'public', 'dllemu', 'werror' ]
+	libs += ['VK', 'SDL2']
 
 	# basic build: dedicated only
 	source = bld.path.ant_glob([
@@ -264,7 +269,7 @@ def build(bld):
 	bld(source = source,
 		target = 'xash',
 		features = features,
-		includes = 'server client client/vgui',
+		includes = ['server', 'client', 'client/vgui', f'{vk_sdk_dir}/Include/'],
 		use = libs,
 		install_path = install_path,
 		nro_install_path = bld.env.BINDIR,
