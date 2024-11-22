@@ -687,7 +687,6 @@ struct sv_client_s;
 typedef struct sizebuf_s sizebuf_t;
 qboolean CL_IsInGame( void );
 qboolean CL_IsInConsole( void );
-qboolean CL_IsThirdPerson( void );
 qboolean CL_IsIntermission( void );
 qboolean CL_Initialized( void );
 char *CL_Userinfo( void );
@@ -773,7 +772,7 @@ void Rcon_Print( host_redirect_t *rd, const char *pMsg );
 qboolean COM_ParseVector( char **pfile, float *v, size_t size );
 int COM_FileSize( const char *filename );
 void COM_FreeFile( void *buffer );
-int COM_CompareFileTime( const char *filename1, const char *filename2, int *iCompare );
+int pfnCompareFileTime( const char *path1, const char *path2, int *retval );
 char *va( const char *format, ... ) FORMAT_CHECK( 1 ) RETURNS_NONNULL;
 qboolean CRC32_MapFile( dword *crcvalue, const char *filename, qboolean multiplayer );
 

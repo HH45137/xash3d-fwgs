@@ -863,7 +863,8 @@ qboolean NET_CompareAdr( const netadr_t a, const netadr_t b )
 	if( a.type6 == NA_IP6 )
 	{
 		if( a.port == b.port && !NET_NetadrIP6Compare( &a, &b ))
-		    return true;
+			return true;
+		return false;
 	}
 
 	Con_DPrintf( S_ERROR "%s: bad address type\n", __func__ );
@@ -2056,7 +2057,7 @@ void NET_Init( void )
 	}
 
 #if XASH_WIN32
-	if( WSAStartup( MAKEWORD( 1, 1 ), &net.winsockdata ))
+	if( WSAStartup( MAKEWORD( 2, 0 ), &net.winsockdata ))
 	{
 		Con_DPrintf( S_ERROR "network initialization failed.\n" );
 		return;

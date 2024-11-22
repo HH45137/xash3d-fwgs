@@ -39,9 +39,11 @@ enum
 };
 
 // a1ba: not using BIT macro, so flags can be copypasted into
-// exported APIs headers and will get nice warning in case of changing values
+// exported APIs headers and will not get warning in case of changing values
 #define PFILE_IGNOREBRACKET (1<<0)
 #define PFILE_HANDLECOLON   (1<<1)
+#define PFILE_IGNOREHASHCMT (1<<2)
+
 #define PFILE_TOKEN_MAX_LENGTH 1024
 #define PFILE_FS_TOKEN_MAX_LENGTH 512
 
@@ -276,13 +278,41 @@ char *Q_stristr( const char *s1, const char *s2 );
 #if HAVE_STRCHRNUL
 #define Q_strchrnul strchrnul
 #else // !HAVE_STRCHRNUL
-static inline const char *Q_strchrnul( const char *s, int c )
+static inline char *Q_strchrnul( const char *s, int c )
 {
-	const char *p = Q_strchr( s, c );
+	char *p = (char *)Q_strchr( s, c );
 	if( p ) return p;
-	return s + Q_strlen( s );
+	return (char *)s + Q_strlen( s );
 }
 #endif // !HAVE_STRCHRNUL
+
+/*
+===========
+Q_splitstr
+
+splits strings by a character
+if handler returns nonzero value, exists with that value
+===========
+*/
+static inline int Q_splitstr( char *str, int delim, void *userdata,
+	int (*handler)( char *prev, char *next, void *userdata ))
+{
+	char *prev = str;
+	char *next = Q_strchrnul( prev, delim );
+	int ret = 0;
+
+	for( ; ; prev = next + 1, next = Q_strchrnul( prev, delim ))
+	{
+		int ch = *next; // save next value if it's modified by handler
+
+		ret = handler( prev, next, userdata );
+
+		if( !ch || ret != 0 )
+			break;
+	}
+
+	return ret;
+}
 
 #ifdef __cplusplus
 }
