@@ -345,3 +345,4 @@ enc_temp_folder/
 
 # ccls langauge server
 .ccls-*
+/ref/vk/glfw

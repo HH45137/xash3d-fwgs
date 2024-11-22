@@ -28,7 +28,8 @@ def build(bld):
 		target   = 'ref_vk',
 		includes = [
 			'.',
-			f'{vk_sdk_dir}/Include/'
+			f'{vk_sdk_dir}/Include/',
+			'./glfw/include/'
 		],
 		defines  = 'REF_DLL=1',
 		use      = libs,

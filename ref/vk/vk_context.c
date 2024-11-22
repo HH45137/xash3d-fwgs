@@ -40,8 +40,8 @@ static void R_SimpleStubBool( qboolean unused )
 
 static qboolean R_Init( void )
 {
-	gEngfuncs.R_Init_Video( REF_VK );
-	return true;
+	qboolean result = R_Init_Video_Vk();
+	return result;
 }
 
 static const char *R_GetConfigName( void )
