@@ -643,6 +643,7 @@ static void R_CollectRendererNames( void )
 #if XASH_REF_SOFT_ENABLED
 		"soft",
 #endif
+		"gl4",
 	};
 
 	// ordering is important here too!
@@ -666,6 +667,7 @@ static void R_CollectRendererNames( void )
 #if XASH_REF_SOFT_ENABLED
 		"Software",
 #endif
+		"OpenGL Modern",
 	};
 
 	ref.num_renderers = ARRAYSIZE( short_names );

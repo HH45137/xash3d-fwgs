@@ -94,6 +94,7 @@ SUBDIRS = [
 	Subproject('ref/gl',                lambda x: x.env.CLIENT and (x.env.GL or x.env.NANOGL or x.env.GLWES or x.env.GL4ES)),
 	Subproject('ref/soft',              lambda x: x.env.CLIENT and x.env.SOFT),
 	Subproject('ref/null',              lambda x: x.env.CLIENT and x.env.NULL),
+	Subproject('ref/gl4',              	lambda x: x.env.CLIENT and x.env.GL4),
 	Subproject('3rdparty/bzip2',        lambda x: x.env.CLIENT and not x.env.HAVE_SYSTEM_BZ2),
 	Subproject('3rdparty/opus',         lambda x: x.env.CLIENT and not x.env.HAVE_SYSTEM_OPUS),
 	Subproject('3rdparty/libogg',       lambda x: x.env.CLIENT and not x.env.HAVE_SYSTEM_OGG),
@@ -125,6 +126,7 @@ REFDLLS = [
 	RefDll('gl4es', False),
 	RefDll('gles3compat', False),
 	RefDll('null', False),
+	RefDll('gl4', True),
 ]
 
 def options(opt):
