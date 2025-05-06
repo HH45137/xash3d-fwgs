@@ -19,6 +19,8 @@ GNU General Public License for more details.
 #include "cvardef.h"
 #include "xash3d_mathlib.h"
 #include "ref_api.h"
+#include "gl4_local.h"
+#include "glad.h"
 
 /*
  * this initially was made to be able to run full client
@@ -52,6 +54,11 @@ static void R_SimpleStubBool( qboolean unused )
 static qboolean R_Init( void )
 {
 	gEngfuncs.R_Init_Video( REF_GL4 );
+
+	gladLoadGL();
+	gEngfuncs.Con_Printf( "GLAD loaded\n");
+	gEngfuncs.Con_Printf( "OpenGL %d.%d\n", GLVersion.major, GLVersion.minor );
+
 	return true;
 }
 
