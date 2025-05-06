@@ -1095,6 +1095,19 @@ qboolean R_Init_Video( const int type )
 		}
 		break;
 	case REF_GL4:
+		if( !glw_state.safe && Sys_GetParmFromCmdLine( "-safegl", safe ) )
+			glw_state.safe = bound( SAFE_NO, Q_atoi( safe ), SAFE_DONTCARE );
+
+		// Set OpenGL 4.6 attributes
+		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
+		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 6 );
+		SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
+
+		if( SDL_GL_LoadLibrary( EGL_LIB ) < 0 )
+		{
+			Con_Reportf( S_ERROR  "Couldn't initialize OpenGL 4.6: %s\n", SDL_GetError());
+			return false;
+		}
 		break;
 	default:
 		Host_Error( "Can't initialize unknown context type %d!\n", type );
@@ -1111,9 +1124,10 @@ qboolean R_Init_Video( const int type )
 	case REF_GL:
 		// refdll also can check extensions
 		ref.dllFuncs.GL_InitExtensions();
+	case REF_GL4:
+		ref.dllFuncs.GL_InitExtensions();
 		break;
 	case REF_SOFTWARE:
-	case REF_GL4:
 	default:
 		break;
 	}

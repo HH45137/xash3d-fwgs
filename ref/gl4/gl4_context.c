@@ -26,8 +26,8 @@ GNU General Public License for more details.
  * but might be a starting point for new renderers as well
  */
 
-static ref_api_t      gEngfuncs;
-static ref_globals_t *gpGlobals;
+ref_api_t		 gEngfuncs;
+ref_globals_t	*gpGlobals;
 
 static void R_SimpleStub( void )
 {
@@ -57,12 +57,31 @@ static qboolean R_Init( void )
 
 static const char *R_GetConfigName( void )
 {
-	return NULL;
+	return "ref_gl4";
 }
 
 static qboolean R_SetDisplayTransform( ref_screen_rotation_t rotate, int x, int y, float scale_x, float scale_y )
 {
-	return true;
+	qboolean ret = true;
+	if( rotate > 0 )
+	{
+		gEngfuncs.Con_Printf("rotation transform not supported\n");
+		ret = false;
+	}
+
+	if( x || y )
+	{
+		gEngfuncs.Con_Printf("offset transform not supported\n");
+		ret = false;
+	}
+
+	if( scale_x != 1.0f || scale_y != 1.0f )
+	{
+		gEngfuncs.Con_Printf("scale transform not supported\n");
+		ret = false;
+	}
+
+	return ret;
 }
 
 static void GL_SetupAttributes( int safegl )
