@@ -51,7 +51,7 @@ static void R_SimpleStubBool( qboolean unused )
 
 static qboolean R_Init( void )
 {
-	gEngfuncs.R_Init_Video( REF_SOFTWARE );
+	gEngfuncs.R_Init_Video( REF_GL4 );
 	return true;
 }
 
