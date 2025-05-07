@@ -426,6 +426,22 @@ R_BeginFrame
 */
 void R_BeginFrame( qboolean clearScene )
 {
+	// gEngfuncs.Con_Printf("Begin Frame\n");
+
+	glConfig.softwareGammaUpdate = false;	// in case of possible fails
+
+	glClearColor( 1.0f, 0.0f, 0.0f, 1.0f );
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	R_CheckCvars();
+
+	R_Set2DMode( true );
+
+	// Todo: Draw buffer
+
+	// Todo: Update texture parameters
+
+	gEngfuncs.CL_ExtraUpdate ();
 }
 
 /*
