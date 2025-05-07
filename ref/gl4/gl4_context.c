@@ -99,11 +99,6 @@ static void GL_SetupAttributes( int safegl )
 	;
 }
 
-static qboolean R_AddEntity( struct cl_entity_s *clent, int type )
-{
-	return true;
-}
-
 static void CL_AddCustomBeam( cl_entity_t *pEnvBeam )
 {
 	;
