@@ -20,7 +20,6 @@ GNU General Public License for more details.
 #include "xash3d_mathlib.h"
 #include "ref_api.h"
 #include "gl4_local.h"
-#include "glad.h"
 
 /*
  * this initially was made to be able to run full client
@@ -461,6 +460,10 @@ static void VGUI_UploadTextureBlock( int drawX, int drawY, const byte *rgba, int
 	;
 }
 
+static void R_ClearScreen( void )
+{
+}
+
 static const ref_interface_t gReffuncs =
 {
 	.R_Init                = R_Init,
@@ -473,17 +476,17 @@ static const ref_interface_t gReffuncs =
 	.GL_ClearExtensions = R_SimpleStub,
 
 	.R_GammaChanged       = R_SimpleStubBool,
-	.R_BeginFrame         = R_SimpleStubBool,
-	.R_RenderScene        = R_SimpleStub,
-	.R_EndFrame           = R_SimpleStub,
-	.R_PushScene          = R_SimpleStub,
-	.R_PopScene           = R_SimpleStub,
-	.GL_BackendStartFrame = R_SimpleStub,
-	.GL_BackendEndFrame   = R_SimpleStub,
+	.R_BeginFrame         = R_BeginFrame,
+	.R_RenderScene        = R_RenderScene,
+	.R_EndFrame           = R_EndFrame,
+	.R_PushScene          = R_PushScene,
+	.R_PopScene           = R_PopScene,
+	.GL_BackendStartFrame = GL_BackendStartFrame,
+	.GL_BackendEndFrame   = GL_BackendEndFrame,
 
-	.R_ClearScreen    = R_SimpleStub,
+	.R_ClearScreen    = R_ClearScreen,
 	.R_AllowFog       = R_SimpleStubBool,
-	.GL_SetRenderMode = R_SimpleStubInt,
+	.GL_SetRenderMode = GL_SetRenderMode,
 
 	.R_AddEntity      = R_AddEntity,
 	.CL_AddCustomBeam = CL_AddCustomBeam,
