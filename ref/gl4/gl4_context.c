@@ -29,6 +29,8 @@ GNU General Public License for more details.
 
 ref_api_t		 gEngfuncs;
 ref_globals_t	*gpGlobals;
+ref_client_t  	*gp_cl;
+ref_host_t		*gp_host;
 
 static void R_SimpleStub( void )
 {
@@ -338,11 +340,6 @@ static void AVI_UploadRawFrame( int texture, int cols, int rows, int width, int 
 	;
 }
 
-static void GL_Bind( int tmu, unsigned int texnum )
-{
-	;
-}
-
 static void GL_LoadTextureMatrix( const float *glmatrix )
 {
 	;
@@ -610,6 +607,9 @@ int EXPORT GetRefAPI( int version, ref_interface_t *funcs, ref_api_t *engfuncs, 
 	*funcs = gReffuncs;
 	gEngfuncs = *engfuncs;
 	gpGlobals = globals;
+
+	gp_cl = (ref_client_t *)ENGINE_GET_PARM( PARM_GET_CLIENT_PTR );
+	gp_host = (ref_host_t *)ENGINE_GET_PARM( PARM_GET_HOST_PTR );
 
 	return REF_API_VERSION;
 }
