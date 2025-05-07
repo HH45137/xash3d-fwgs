@@ -128,6 +128,8 @@ static void R_RenderInfo_f( void )
 
 void GL_InitExtensions( void )
 {
+	tr.framecount = tr.visframecount = 1;
+	glw_state.initialized = true;
 }
 
 //=======================================================================

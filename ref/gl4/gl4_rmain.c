@@ -471,6 +471,7 @@ R_EndFrame
 */
 void R_EndFrame( void )
 {
+	gEngfuncs.GL_SwapBuffers();
 }
 
 /*

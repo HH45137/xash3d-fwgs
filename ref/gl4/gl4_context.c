@@ -54,7 +54,11 @@ static qboolean R_Init( void )
 {
 	gEngfuncs.R_Init_Video( REF_GL4 );
 
-	gladLoadGL();
+	if ( gladLoadGL() == 0 )
+	{
+		gEngfuncs.Con_Printf( S_ERROR "GLAD failed to load OpenGL\n");
+		return false;
+	}
 	gEngfuncs.Con_Printf( "GLAD loaded\n");
 	gEngfuncs.Con_Printf( "OpenGL %d.%d\n", GLVersion.major, GLVersion.minor );
 
