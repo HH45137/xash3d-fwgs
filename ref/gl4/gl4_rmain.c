@@ -409,6 +409,40 @@ R_SetupRefParams must be called right before
 */
 void R_RenderScene( void )
 {
+	if( !WORLDMODEL && RI.drawWorld )
+	gEngfuncs.Host_Error( "%s: NULL worldmodel\n", __func__ );
+
+	// frametime is valid only for normal pass
+	if( RP_NORMALPASS( ))
+		tr.frametime = gp_cl->time - gp_cl->oldtime;
+	else tr.frametime = 0.0;
+
+	// begin a new frame
+	tr.framecount++;
+
+	R_PushDlights();
+
+	R_SetupFrustum();
+	R_SetupFrame();
+	R_SetupGL( true );
+	R_Clear( ~0 );
+
+	R_MarkLeaves();
+	R_DrawFog ();
+	if( RI.drawWorld )
+		R_AnimateRipples();
+
+	R_CheckGLFog();
+	R_DrawWorld();
+	R_CheckFog();
+
+	gEngfuncs.CL_ExtraUpdate ();	// don't let sound get messed up if going slow
+
+	R_DrawEntitiesOnList();
+
+	R_DrawWaterSurfaces();
+
+	R_EndGL();
 }
 
 void R_GammaChanged( qboolean do_reset_gamma )

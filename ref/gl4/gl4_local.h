@@ -10,7 +10,7 @@
 #include "render_api.h"
 #include "protocol.h"
 #include "dlight.h"
-// #include "gl4_frustum.h"
+#include "gl4_frustum.h"
 #include "ref_api.h"
 #include "xash3d_mathlib.h"
 #include "ref_params.h"
@@ -128,7 +128,7 @@ typedef struct
 	cl_entity_t	*currentbeam;	// same as above but for beams
 
 	int		viewport[4];
-	// gl_frustum_t	frustum;
+	gl_frustum_t	frustum;
 
 	mleaf_t		*viewleaf;
 	mleaf_t		*oldviewleaf;
