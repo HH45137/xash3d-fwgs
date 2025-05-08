@@ -1,3 +1,18 @@
+/*
+gl_local.h - renderer local declarations
+Copyright (C) 2010 Uncle Mike
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+*/
+
 #ifndef GL4_LOCAL_H
 #define GL4_LOCAL_H
 
@@ -10,7 +25,7 @@
 #include "render_api.h"
 #include "protocol.h"
 #include "dlight.h"
-#include "gl4_frustum.h"
+// #include "gl_frustum.h"
 #include "ref_api.h"
 #include "xash3d_mathlib.h"
 #include "ref_params.h"
@@ -18,10 +33,19 @@
 #include "com_strings.h"
 #include "pm_movevars.h"
 #include "cvardef.h"
+// #include "gl_export.h"
 #include "wadfile.h"
 #include "common/mod_local.h"
 #include "glad.h"
 
+// #if XASH_PSVITA
+// int VGL_ShimInit( void );
+// void VGL_ShimShutdown( void );
+// void VGL_ShimEndFrame( void );
+// #endif
+// #if !defined(XASH_GL_STATIC)
+// #include "gl2_shim/gl2_shim.h"
+// #endif
 
 #ifndef offsetof
 #ifdef __GNUC__
@@ -128,7 +152,7 @@ typedef struct
 	cl_entity_t	*currentbeam;	// same as above but for beams
 
 	int		viewport[4];
-	gl_frustum_t	frustum;
+	// gl_frustum_t	frustum;
 
 	mleaf_t		*viewleaf;
 	mleaf_t		*oldviewleaf;
