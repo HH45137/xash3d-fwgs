@@ -30,7 +30,7 @@ static void CL_FillRGBA(int rendermode, float _x, float _y, float _w, float _h, 
 static qboolean Mod_LooksLikeWaterTexture(const char* name) { return false; }
 static void Mod_BrushUnloadTextures(model_t* mod) { }
 static void Mod_UnloadTextures(model_t* mod) { }
-static qboolean Mod_ProcessRenderData(model_t* mod, qboolean create, const byte* buf) { return false; }
+static qboolean Mod_ProcessRenderData(model_t* mod, qboolean create, const byte* buf) { return true; }
 static int GL_RefGetParm(int parm, int arg) { return 0; }
 static void R_GetDetailScaleForTexture(int texture, float* xScale, float* yScale) { }
 static void R_GetExtraParmsForTexture(int texture, byte* red, byte* green, byte* blue, byte* density) { }
@@ -48,7 +48,6 @@ static void GAME_EXPORT VGUI_UploadTextureBlock(int drawX, int drawY, const byte
 static void GAME_EXPORT VGUI_SetupDrawing(qboolean rect) { }
 static void GAME_EXPORT R_OverrideTextureSourceSize(unsigned int texnum, uint srcWidth, uint srcHeight) { }
 static void* GAME_EXPORT R_GetProcAddress(const char* name) { return NULL; }
-static const char* R_GetConfigName(void) { return NULL; }
 
 static const ref_interface_t gReffuncs = {
     R_Init,

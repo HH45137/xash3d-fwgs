@@ -197,87 +197,81 @@ void TriFogParams(float flDensity, int iFogSkybox) { }
 void TriCullFace(TRICULLSTYLE mode) { }
 
 // Define default empty implementations for all function pointers in ref_interface_t
-qboolean R_Init(void) { return true; }
+qboolean R_Init(void)
+{
+    gEngfuncs.R_Init_Video(REF_GL4);
+
+    if (gladLoadGL() == 0) {
+        gEngfuncs.Con_Printf(S_ERROR "GLAD failed to load OpenGL\n");
+        return false;
+    }
+    gEngfuncs.Con_Printf("GLAD loaded\n");
+    gEngfuncs.Con_Printf("OpenGL %d.%d\n", GLVersion.major, GLVersion.minor);
+
+    R_InitImages();
+    R_SpriteInit();
+    R_StudioInit();
+    R_AliasInit();
+    R_ClearDecals();
+    R_ClearScene();
+
+    return true;
+}
 void R_Shutdown(void) { }
-const char* R_GetConfigName(void) { return NULL; }
+const char* R_GetConfigName(void) { return "ref_gl4"; }
 qboolean R_SetDisplayTransform(ref_screen_rotation_t rotate, int x, int y, float scale_x, float scale_y) { return false; }
 void GL_SetupAttributes(int safegl) { }
-void GL_InitExtensions(void) { }
+void GL_InitExtensions(void)
+{
+}
 void GL_ClearExtensions(void) { }
 void R_GammaChanged(qboolean do_reset_gamma) { }
-void R_BeginFrame(qboolean clearScene) { }
-//  void R_RenderScene(void) {}
-void R_EndFrame(void) { }
-//  void R_PushScene(void) {}
-//  void R_PopScene(void) {}
-//  void GL_BackendStartFrame(void) {}
-//  void GL_BackendEndFrame(void) {}
+void R_BeginFrame(qboolean clearScene)
+{
+    // gEngfuncs.Con_Printf("Begin Frame\n");
+
+    glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    gEngfuncs.CL_ExtraUpdate();
+}
+void R_EndFrame(void)
+{
+    gEngfuncs.GL_SwapBuffers();
+}
 void R_ClearScreen(void) { }
-//  void R_AllowFog(qboolean allow) {}
-//  void GL_SetRenderMode(int renderMode) {}
 qboolean R_AddEntity(struct cl_entity_s* clent, int type) { return false; }
 void CL_AddCustomBeam(cl_entity_t* pEnvBeam) { }
 void R_ProcessEntData(qboolean allocate, cl_entity_t* entities, unsigned int max_entities) { }
 void R_Flush(unsigned int flush_flags) { }
-//  void R_ShowTextures(void) {}
 const byte* R_GetTextureOriginalBuffer(unsigned int idx) { return NULL; }
-//  int GL_LoadTextureFromBuffer(const char *name, rgbdata_t *pic, texFlags_t flags, qboolean update) { return 0; }
-//  void GL_ProcessTexture(int texnum, float gamma, int topColor, int bottomColor) {}
 void R_SetupSky(int* skyboxTextures) { }
-//  void R_Set2DMode(qboolean enable) {}
 void R_DrawStretchRaw(float x, float y, float w, float h, int cols, int rows, const byte* data, qboolean dirty) { }
 void R_DrawStretchPic(float x, float y, float w, float h, float s1, float t1, float s2, float t2, int texnum) { }
 void FillRGBA(int rendermode, float x, float y, float w, float h, byte r, byte g, byte b, byte a) { }
 int WorldToScreen(const vec3_t world, vec3_t screen) { return 0; }
 qboolean VID_ScreenShot(const char* filename, int shot_type) { return false; }
 qboolean VID_CubemapShot(const char* base, uint size, const float* vieworg, qboolean skyshot) { return false; }
-//  colorVec R_LightPoint(const float *p) { return (colorVec){0, 0, 0, 0}; }
 void R_DecalShoot(int textureIndex, int entityIndex, int modelIndex, vec3_t pos, int flags, float scale) { }
 void R_DecalRemoveAll(int texture) { }
 int R_CreateDecalList(struct decallist_s* pList) { return 0; }
 void R_ClearAllDecals(void) { }
-//  float R_StudioEstimateFrame(cl_entity_t *e, mstudioseqdesc_t *pseqdesc, double time) { return 0.0f; }
-//  void R_StudioLerpMovement(cl_entity_t *e, double time, vec3_t origin, vec3_t angles) {}
-//  void CL_InitStudioAPI(void) {}
 void R_SetSkyCloudsTextures(int solidskyTexture, int alphaskyTexture) { }
-//  void GL_SubdivideSurface(model_t *mod, msurface_t *fa) {}
-//  void CL_RunLightStyles(lightstyle_t *ls) {}
 void R_GetSpriteParms(int* frameWidth, int* frameHeight, int* numFrames, int currentFrame, const model_t* pSprite) { }
 int R_GetSpriteTexture(const model_t* m_pSpriteModel, int frame) { return 0; }
 qboolean Mod_ProcessRenderData(model_t* mod, qboolean create, const byte* buffer) { return false; }
-//  void Mod_StudioLoadTextures(model_t *mod, void *data) {}
-//  void CL_DrawParticles(double frametime, particle_t *particles, float partsize) {}
-//  void CL_DrawTracers(double frametime, particle_t *tracers) {}
-//  void CL_DrawBeams(int fTrans, BEAM *beams) {}
-//  qboolean R_BeamCull(const vec3_t start, const vec3_t end, qboolean pvsOnly) { return false; }
 int RefGetParm(int parm, int arg) { return 0; }
 void GetDetailScaleForTexture(int texture, float* xScale, float* yScale) { }
 void GetExtraParmsForTexture(int texture, byte* red, byte* green, byte* blue, byte* alpha) { }
 float GetFrameTime(void) { return 0.0f; }
 void R_SetCurrentEntity(struct cl_entity_s* ent) { }
 void R_SetCurrentModel(struct model_s* mod) { }
-//  int GL_FindTexture(const char *name) { return 0; }
 const char* GL_TextureName(unsigned int texnum) { return NULL; }
 const byte* GL_TextureData(unsigned int texnum) { return NULL; }
-//  int GL_LoadTexture(const char *name, const byte *buf, size_t size, int flags) { return 0; }
-//  int GL_CreateTexture(const char *name, int width, int height, const void *buffer, texFlags_t flags) { return 0; }
-//  int GL_LoadTextureArray(const char **names, int flags) { return 0; }
-//  int GL_CreateTextureArray(const char *name, int width, int height, int depth, const void *buffer, texFlags_t flags) { return 0; }
-//  void GL_FreeTexture(unsigned int texnum) {}
 void R_OverrideTextureSourceSize(unsigned int texnum, unsigned int srcWidth, unsigned int srcHeight) { }
-//  void DrawSingleDecal(struct decal_s *pDecal, struct msurface_s *fa) {}
-//  float *R_DecalSetupVerts(struct decal_s *pDecal, struct msurface_s *surf, int texture, int *outCount) { return NULL; }
-//  void R_EntityRemoveDecals(struct model_s *mod) {}
 void AVI_UploadRawFrame(int texture, int cols, int rows, int width, int height, const byte* data) { }
-//  void GL_Bind(int tmu, unsigned int texnum) {}
-//  void GL_SelectTexture(int tmu) {}
 void GL_LoadTextureMatrix(const float* glmatrix) { }
 void GL_TexMatrixIdentity(void) { }
-//  void GL_CleanUpTextureUnits(int last) {}
-//  void GL_TexGen(unsigned int coord, unsigned int mode) {}
-//  void GL_TextureTarget(unsigned int target) {}
-//  void GL_TexCoordArrayMode(unsigned int texmode) {}
-//  void GL_UpdateTexSize(int texnum, int width, int height, int depth) {}
 void GL_Reserved0(void) { }
 void GL_Reserved1(void) { }
 void GL_DrawParticles(const struct ref_viewpass_s* rvp, qboolean trans_pass, float frametime) { }
@@ -288,9 +282,7 @@ void GL_OrthoBounds(const float* mins, const float* maxs) { }
 qboolean R_SpeedsMessage(char* out, size_t size) { return false; }
 byte* Mod_GetCurrentVis(void) { return NULL; }
 void R_NewMap(void) { }
-//  void R_ClearScene(void) {}
 void* R_GetProcAddress(const char* name) { return NULL; }
-//  void TriRenderMode(int mode) {}
 void Begin(int primitiveCode) { }
 void End(void) { }
 void Color4f(float r, float g, float b, float a) { }
