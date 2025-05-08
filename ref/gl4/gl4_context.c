@@ -595,6 +595,8 @@ static const ref_interface_t gReffuncs =
 
 	.VGUI_SetupDrawing   = VGUI_SetupDrawing,
 	.VGUI_UploadTextureBlock = VGUI_UploadTextureBlock,
+
+	.GL_RenderFrame=R_RenderFrame
 };
 
 int EXPORT GetRefAPI( int version, ref_interface_t *funcs, ref_api_t *engfuncs, ref_globals_t *globals );

@@ -487,6 +487,28 @@ set initial params for renderer
 */
 void R_SetupRefParams( const ref_viewpass_t *rvp )
 {
+	RI.params = RP_NONE;
+	RI.drawWorld = FBitSet( rvp->flags, RF_DRAW_WORLD );
+	RI.onlyClientDraw = FBitSet( rvp->flags, RF_ONLY_CLIENTDRAW );
+	RI.farClip = 0;
+
+	if( !FBitSet( rvp->flags, RF_DRAW_CUBEMAP ))
+		RI.drawOrtho = FBitSet( rvp->flags, RF_DRAW_OVERVIEW );
+	else RI.drawOrtho = false;
+
+	// setup viewport
+	RI.viewport[0] = rvp->viewport[0];
+	RI.viewport[1] = rvp->viewport[1];
+	RI.viewport[2] = rvp->viewport[2];
+	RI.viewport[3] = rvp->viewport[3];
+
+	// calc FOV
+	RI.fov_x = rvp->fov_x;
+	RI.fov_y = rvp->fov_y;
+
+	VectorCopy( rvp->vieworigin, RI.vieworg );
+	VectorCopy( rvp->viewangles, RI.viewangles );
+	VectorCopy( rvp->vieworigin, RI.pvsorigin );
 }
 
 /*
@@ -496,6 +518,38 @@ R_RenderFrame
 */
 void R_RenderFrame( const ref_viewpass_t *rvp )
 {
+	if( r_norefresh->value )
+		return;
+
+	// setup the initial render params
+	R_SetupRefParams( rvp );
+
+	if( gl_finish.value && RI.drawWorld )
+		// pglFinish();
+		return;
+
+	// completely override rendering
+	if( gEngfuncs.drawFuncs->GL_RenderFrame != NULL )
+	{
+		tr.fCustomRendering = true;
+
+		if( gEngfuncs.drawFuncs->GL_RenderFrame( rvp ))
+		{
+			R_GatherPlayerLight();
+			tr.realframecount++;
+			tr.fResetVis = true;
+			return;
+		}
+	}
+
+	tr.fCustomRendering = false;
+	if( !RI.onlyClientDraw )
+		R_RunViewmodelEvents();
+
+	tr.realframecount++; // right called after viewmodel events
+	R_RenderScene();
+
+	return;
 }
 
 /*
