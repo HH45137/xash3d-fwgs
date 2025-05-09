@@ -1,5 +1,9 @@
 #include "gl4_local.h"
 
+ref_speeds_t r_stats;
+ref_instance_t RI;
+gl_globals_t tr;
+
 // gl_backend.c
 void GL_BackendStartFrame(void) { }
 void GL_BackendEndFrame(void) { }
@@ -156,6 +160,7 @@ void R_StudioResetPlayerModels(void) { }
 void CL_InitStudioAPI(void) { }
 void Mod_StudioLoadTextures(model_t* mod, void* data) { }
 void Mod_StudioUnloadTextures(void* data) { }
+void R_RunViewmodelEvents() { }
 
 // gl_alias.c
 void Mod_LoadAliasModel(model_t* mod, const void* buffer, qboolean* loaded) { }
