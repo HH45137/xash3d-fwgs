@@ -213,6 +213,8 @@ qboolean R_Init(void)
     gEngfuncs.Con_Printf("GLAD loaded\n");
     gEngfuncs.Con_Printf("OpenGL %d.%d\n", GLVersion.major, GLVersion.minor);
 
+    glViewport(0, 0, gpGlobals->width, gpGlobals->height);
+
     R_InitImages();
     R_SpriteInit();
     R_StudioInit();
