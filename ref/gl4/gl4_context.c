@@ -24,7 +24,6 @@ ref_host_t* gp_host;
 
 void _Mem_Free(void* data, const char* filename, int fileline) { }
 void* _Mem_Alloc(poolhandle_t poolptr, size_t size, qboolean clear, const char* filename, int fileline) { return NULL; }
-static void R_ClearScreen(void) { }
 static const byte* R_GetTextureOriginalBuffer(unsigned int idx) { return NULL; }
 static void CL_FillRGBA(int rendermode, float _x, float _y, float _w, float _h, byte r, byte g, byte b, byte a) { }
 static qboolean Mod_LooksLikeWaterTexture(const char* name) { return false; }

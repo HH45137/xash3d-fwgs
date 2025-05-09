@@ -298,6 +298,7 @@ extern float		gldepthmin, gldepthmax;
 #define Mod_AllowMaterials() (host_allow_materials->value && !FBitSet( gp_host->features, ENGINE_DISABLE_HDTEXTURES ))
 
 const char* R_GetConfigName(void);
+void R_ClearScreen(void);
 
 //
 // gl_backend.c
