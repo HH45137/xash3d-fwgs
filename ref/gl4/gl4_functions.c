@@ -1,8 +1,13 @@
+#include "crclib.h"
 #include "gl4_local.h"
+#include "gl4_util.h"
 
 ref_speeds_t r_stats;
 ref_instance_t RI;
 gl_globals_t tr;
+glconfig_t glConfig;
+glstate_t glState;
+glwstate_t glw_state;
 
 // gl_backend.c
 void GL_BackendStartFrame(void) { }
@@ -50,10 +55,246 @@ void R_DrawWorldHull(void) { }
 void R_DrawModelHull(void) { }
 
 // gl_image.c
+
+#define TEXTURES_HASH_SIZE (MAX_TEXTURES >> 2)
+
+static gl_texture_t gl_textures[MAX_TEXTURES];
+static gl_texture_t* gl_texturesHashTable[TEXTURES_HASH_SIZE];
+static uint gl_numTextures;
+
+static qboolean GL_CheckTexName(const char* name)
+{
+    int len;
+
+    if (!COM_CheckString(name))
+        return false;
+
+    len = Q_strlen(name);
+
+    // because multi-layered textures can exceed name string
+    if (len >= sizeof(gl_textures->name)) {
+        gEngfuncs.Con_Printf(S_ERROR "LoadTexture: too long name %s (%d)\n", name, len);
+        return false;
+    }
+
+    return true;
+}
+static gl_texture_t* GL_TextureForName(const char* name)
+{
+    gl_texture_t* tex;
+    uint hash;
+
+    // find the texture in array
+    hash = COM_HashKey(name, TEXTURES_HASH_SIZE);
+
+    for (tex = gl_texturesHashTable[hash]; tex != NULL; tex = tex->nextHash) {
+        if (!Q_stricmp(tex->name, name))
+            return tex;
+    }
+
+    return NULL;
+}
+static gl_texture_t* GL_AllocTexture(const char* name, texFlags_t flags)
+{
+    const qboolean skyboxhack = FBitSet(flags, TF_SKYSIDE) && glConfig.context == CONTEXT_TYPE_GL;
+    gl_texture_t* tex = NULL;
+    GLuint texnum = 1;
+
+    if (!skyboxhack) {
+        // keep generating new texture names to avoid collision with predefined skybox objects
+        do {
+            glGenTextures(1, &texnum);
+            if (texnum >= MAX_TEXTURES) {
+                gEngfuncs.Con_Printf(S_ERROR "GL_AllocTexture: MAX_TEXTURES limit exceeds\n");
+                return NULL;
+            }
+            if (texnum >= SKYBOX_BASE_NUM && texnum <= SKYBOX_BASE_NUM + SKYBOX_MAX_SIDES)
+                continue;
+
+            // find a free texture_t slot
+            uint i;
+
+            for (i = 0; i < MAX_TEXTURES; i++) {
+                if (gl_textures[i].texnum)
+                    continue;
+
+                tex = &gl_textures[i];
+                break;
+            }
+        } while (texnum >= SKYBOX_BASE_NUM && texnum <= SKYBOX_BASE_NUM + SKYBOX_MAX_SIDES);
+    } else
+        texnum = tr.skyboxbasenum;
+
+    // try to match texture slot and texture handle because of buggy games
+    if (texnum >= MAX_TEXTURES || gl_textures[texnum].texnum != 0) {
+        // find a free texture_t slot
+        uint i;
+
+        for (i = 0; i < MAX_TEXTURES; i++) {
+            if (gl_textures[i].texnum)
+                continue;
+
+            tex = &gl_textures[i];
+            break;
+        }
+    } else
+        tex = &gl_textures[texnum];
+
+    if (tex == NULL) {
+        gEngfuncs.Host_Error("%s: MAX_TEXTURES limit exceeds\n", __func__);
+        return NULL;
+    }
+
+    // copy initial params
+    Q_strncpy(tex->name, name, sizeof(tex->name));
+    tex->texnum = texnum;
+    tex->flags = flags;
+
+    // increase counter
+    gl_numTextures = Q_max((tex - gl_textures) + 1, gl_numTextures);
+    if (skyboxhack)
+        tr.skyboxbasenum++;
+
+    // add to hash table
+    tex->hashValue = COM_HashKey(name, TEXTURES_HASH_SIZE);
+    tex->nextHash = gl_texturesHashTable[tex->hashValue];
+    gl_texturesHashTable[tex->hashValue] = tex;
+
+    return tex;
+}
+static void GL_ProcessImage(gl_texture_t* tex, rgbdata_t* pic)
+{
+    uint img_flags = 0;
+
+    // force upload texture as RGB or RGBA (detail textures requires this)
+    if (tex->flags & TF_FORCE_COLOR)
+        pic->flags |= IMAGE_HAS_COLOR;
+    if (pic->flags & IMAGE_HAS_ALPHA)
+        tex->flags |= TF_HAS_ALPHA;
+
+    tex->encode = pic->encode; // share encode method
+
+    if (ImageCompressed(pic->type)) {
+        if (!pic->numMips)
+            tex->flags |= TF_NOMIPMAP; // disable mipmapping by user request
+
+        // clear all the unsupported flags
+        tex->flags &= ~TF_KEEP_SOURCE;
+    } else {
+        // copy flag about luma pixels
+        if (pic->flags & IMAGE_HAS_LUMA)
+            tex->flags |= TF_HAS_LUMA;
+
+        if (pic->flags & IMAGE_QUAKEPAL)
+            tex->flags |= TF_QUAKEPAL;
+
+        // create luma texture from quake texture
+        if (tex->flags & TF_MAKELUMA) {
+            img_flags |= IMAGE_MAKE_LUMA;
+            tex->flags &= ~TF_MAKELUMA;
+        }
+
+        if (!FBitSet(tex->flags, TF_IMG_UPLOADED) && FBitSet(tex->flags, TF_KEEP_SOURCE))
+            tex->original = gEngfuncs.FS_CopyImage(pic); // because current pic will be expanded to rgba
+
+        // we need to expand image into RGBA buffer
+        if (pic->type == PF_INDEXED_24 || pic->type == PF_INDEXED_32)
+            img_flags |= IMAGE_FORCE_RGBA;
+
+        // processing image before uploading (force to rgba, make luma etc)
+        if (pic->buffer)
+            gEngfuncs.Image_Process(&pic, 0, 0, img_flags, 0);
+
+        if (FBitSet(tex->flags, TF_LUMINANCE))
+            ClearBits(pic->flags, IMAGE_HAS_COLOR);
+    }
+}
+static qboolean GL_UploadTexture(gl_texture_t* tex, rgbdata_t* pic)
+{
+    if (!glw_state.initialized)
+        return true;
+
+    Assert(pic != NULL);
+    Assert(tex != NULL);
+
+    tex->target = GL_TEXTURE_2D;
+    tex->width = pic->width;
+    tex->height = pic->height;
+    tex->depth = 1;
+    tex->format = GL_RGBA8;
+    tex->size = tex->width * tex->height * 4;
+    tex->numMips = 1;
+
+    glBindTexture(tex->target, tex->texnum);
+
+    glTexImage2D(
+        tex->target,
+        0,
+        GL_RGBA8,
+        tex->width,
+        tex->height,
+        0,
+        GL_RGBA,
+        GL_UNSIGNED_BYTE,
+        pic->buffer);
+
+    int err = glGetError();
+    if (err != GL_NO_ERROR) {
+        gEngfuncs.Con_Printf(S_OPENGL_ERROR "GL error %d while uploading %s\n", err, tex->name);
+        return false;
+    }
+
+    SetBits(tex->flags, TF_IMG_UPLOADED);
+    return true;
+}
+
 void R_SetTextureParameters(void) { }
 gl_texture_t* R_GetTexture(GLenum texnum) { return NULL; }
 const char* GL_TargetToString(GLenum target) { return NULL; }
-int GL_LoadTexture(const char* name, const byte* buf, size_t size, int flags) { return 0; }
+int GL_LoadTexture(const char* name, const byte* buf, size_t size, int flags)
+{
+    gEngfuncs.Con_Printf("Loading texture: %s\n", name);
+
+    gl_texture_t* tex;
+    rgbdata_t* pic;
+    uint picFlags = 0;
+
+    if (!GL_CheckTexName(name))
+        return 0;
+
+    // see if already loaded
+    if ((tex = GL_TextureForName(name)))
+        return (tex - gl_textures);
+
+    if (FBitSet(flags, TF_NOFLIP_TGA))
+        SetBits(picFlags, IL_DONTFLIP_TGA);
+
+    if (FBitSet(flags, TF_KEEP_SOURCE) && !FBitSet(flags, TF_EXPAND_SOURCE))
+        SetBits(picFlags, IL_KEEP_8BIT);
+
+    // set some image flags
+    gEngfuncs.Image_SetForceFlags(picFlags);
+
+    pic = gEngfuncs.FS_LoadImage(name, buf, size);
+    if (!pic)
+        return 0; // couldn't loading image
+
+    // allocate the new one
+    tex = GL_AllocTexture(name, flags);
+    GL_ProcessImage(tex, pic);
+
+    if (!GL_UploadTexture(tex, pic)) {
+        memset(tex, 0, sizeof(gl_texture_t));
+        gEngfuncs.FS_FreeImage(pic); // release source texture
+        return 0;
+    }
+
+    GL_ApplyTextureParams(tex); // update texture filter, wrap etc
+    gEngfuncs.FS_FreeImage(pic); // release source texture
+
+    // NOTE: always return texnum as index in array or engine will stop work !!!
+    return tex - gl_textures;
+}
 int GL_LoadTextureArray(const char** names, int flags) { return 0; }
 int GL_LoadTextureFromBuffer(const char* name, rgbdata_t* pic, texFlags_t flags, qboolean update) { return 0; }
 byte* GL_ResampleTexture(const byte* source, int in_w, int in_h, int out_w, int out_h, qboolean isNormalMap) { return NULL; }
