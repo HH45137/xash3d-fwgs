@@ -100,8 +100,8 @@ SUBDIRS = [
 	Subproject('3rdparty/libogg',       lambda x: x.env.CLIENT and not x.env.HAVE_SYSTEM_OGG),
 	Subproject('3rdparty/vorbis',       lambda x: x.env.CLIENT and (not x.env.HAVE_SYSTEM_VORBIS or not x.env.HAVE_SYSTEM_VORBISFILE)),
 	Subproject('3rdparty/opusfile',     lambda x: x.env.CLIENT and not x.env.HAVE_SYSTEM_OPUSFILE),
-	Subproject('3rdparty/mainui',       lambda x: x.env.CLIENT and not x.env.TUI),
 	Subproject('3rdparty/maintui',      lambda x: x.env.CLIENT and x.env.TUI),
+	Subproject('3rdparty/mainui',       lambda x: x.env.CLIENT),
 	Subproject('3rdparty/vgui_support', lambda x: x.env.CLIENT),
 	Subproject('3rdparty/MultiEmulator',lambda x: x.env.CLIENT),
 #	Subproject('3rdparty/freevgui',     lambda x: x.env.CLIENT),
@@ -456,9 +456,17 @@ def configure(conf):
 		conf.check_cc(lib='vrtld')
 		conf.check_cc(lib='m')
 	elif conf.env.DEST_OS == 'android':
+		# maybe there is some better check?
+		if conf.find_program('termux-info', mandatory=False):
+			conf.env.TERMUX = True
+			conf.define('__TERMUX__', 1)
+
 		conf.check_cc(lib='dl')
 		conf.check_cc(lib='log')
-		# LIB_M added in xcompile!
+		if not conf.options.ANDROID_OPTS:
+			# if we're compiling on device itself
+			conf.check_cc(lib='m')
+		# otherwise LIB_M is defined by xcompile (as it might be libm_hard, depending on NDK configuration)
 	elif conf.env.DEST_OS == 'win32':
 		# Common Win32 libraries
 		# Don't check them more than once, to save time

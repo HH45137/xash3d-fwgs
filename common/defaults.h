@@ -140,13 +140,13 @@ Default build-depended cvar and constant values
 
 // Platform overrides
 #if XASH_NSWITCH
-	#define DEFAULT_TOUCH_ENABLE "0"
+	#define DEFAULT_TOUCH_ENABLE "1"
 	#define DEFAULT_M_IGNORE     "1"
 	#define DEFAULT_MODE_WIDTH   1280
 	#define DEFAULT_MODE_HEIGHT  720
 	#define DEFAULT_ALLOWCONSOLE 1
 #elif XASH_PSVITA
-	#define DEFAULT_TOUCH_ENABLE "0"
+	#define DEFAULT_TOUCH_ENABLE "1"
 	#define DEFAULT_M_IGNORE     "1"
 	#define DEFAULT_MODE_WIDTH   960
 	#define DEFAULT_MODE_HEIGHT  544
@@ -158,7 +158,7 @@ Default build-depended cvar and constant values
 	#define DEFAULT_M_IGNORE     "1"
 #endif // !XASH_MOBILE_PLATFORM && !XASH_NSWITCH
 
-#if XASH_ANDROID || XASH_IOS || XASH_EMSCRIPTEN
+#if (XASH_ANDROID && !XASH_TERMUX) || XASH_IOS || XASH_EMSCRIPTEN
 	// this means that libraries are provided with engine, but not in game data
 	// You need add library loading code to library.c when adding new platform
 	#define XASH_INTERNAL_GAMELIBS

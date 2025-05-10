@@ -1,6 +1,6 @@
 /*
-events.c - SDL event system handlers
-Copyright (C) 2015-2017 a1batross
+host_sdl1.c - SDL event system handlers
+Copyright (C) 2015-2025 a1batross
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -12,7 +12,6 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 */
-#if defined( XASH_SDL ) && !XASH_DEDICATED
 #include <SDL.h>
 #include <ctype.h>
 
@@ -21,11 +20,10 @@ GNU General Public License for more details.
 #include "input.h"
 #include "client.h"
 #include "vgui_draw.h"
-#include "events.h"
+#include "platform_sdl1.h"
 #include "sound.h"
 #include "vid_common.h"
 
-#if !SDL_VERSION_ATLEAST( 2, 0, 0 )
 #define SDL_SCANCODE_A SDLK_a
 #define SDL_SCANCODE_Z SDLK_z
 #define SDL_SCANCODE_1 SDLK_1
@@ -88,7 +86,6 @@ GNU General Public License for more details.
 #define SDL_SCANCODE_PRINTSCREEN SDLK_PRINT
 #define SDL_SCANCODE_UNKNOWN SDLK_UNKNOWN
 #define SDL_GetScancodeName( x ) "unknown"
-#endif
 
 /*
 =============
@@ -99,18 +96,7 @@ SDLash_KeyEvent
 static void SDLash_KeyEvent( SDL_KeyboardEvent key )
 {
 	int down = key.state != SDL_RELEASED;
-#if SDL_VERSION_ATLEAST( 2, 0, 0 )
-	int keynum = key.keysym.scancode;
-#else
 	int keynum = key.keysym.sym;
-#endif
-
-#if XASH_ANDROID
-	if( keynum == SDL_SCANCODE_VOLUMEUP || keynum == SDL_SCANCODE_VOLUMEDOWN )
-	{
-		host.force_draw_version_time = host.realtime + FORCE_DRAW_VERSION_TIME;
-	}
-#endif
 
 	if( SDL_IsTextInputActive( ) && down )
 	{
@@ -126,13 +112,6 @@ static void SDLash_KeyEvent( SDL_KeyboardEvent key )
 			return;
 		}
 
-#if SDL_VERSION_ATLEAST( 2, 0, 0 )
-		// ignore printable keys, they are coming through SDL_TEXTINPUT
-		if(( keynum >= SDL_SCANCODE_A && keynum <= SDL_SCANCODE_Z )
-			|| ( keynum >= SDL_SCANCODE_1 && keynum <= SDL_SCANCODE_0 )
-			|| ( keynum >= SDL_SCANCODE_KP_1 && keynum <= SDL_SCANCODE_KP_0 ))
-			return;
-#else
 		if( keynum >= SDLK_KP0 && keynum <= SDLK_KP9 )
 			keynum -= SDLK_KP0 + '0';
 
@@ -143,7 +122,6 @@ static void SDLash_KeyEvent( SDL_KeyboardEvent key )
 
 			CL_CharEvent( keynum );
 		}
-#endif
 	}
 
 #define DECLARE_KEY_RANGE( min, max, repl ) \
@@ -170,7 +148,6 @@ static void SDLash_KeyEvent( SDL_KeyboardEvent key )
 		case SDL_SCANCODE_MINUS: keynum = '-'; break;
 		case SDL_SCANCODE_TAB: keynum = K_TAB; break;
 		case SDL_SCANCODE_RETURN: keynum = K_ENTER; break;
-		case SDL_SCANCODE_AC_BACK:
 		case SDL_SCANCODE_ESCAPE: keynum = K_ESCAPE; break;
 		case SDL_SCANCODE_SPACE: keynum = K_SPACE; break;
 		case SDL_SCANCODE_BACKSPACE: keynum = K_BACKSPACE; break;
@@ -220,19 +197,6 @@ static void SDLash_KeyEvent( SDL_KeyboardEvent key )
 			host.force_draw_version_time = host.realtime + FORCE_DRAW_VERSION_TIME;
 			break;
 		}
-		case SDL_SCANCODE_PAUSE: keynum = K_PAUSE; break;
-		case SDL_SCANCODE_SCROLLLOCK: keynum = K_SCROLLLOCK; break;
-#if SDL_VERSION_ATLEAST( 2, 0, 0 )
-		case SDL_SCANCODE_APPLICATION: keynum = K_WIN; break; // (compose key) ???
-		// don't console spam on known functional buttons, not used in engine
-		case SDL_SCANCODE_MUTE:
-		case SDL_SCANCODE_VOLUMEUP:
-		case SDL_SCANCODE_VOLUMEDOWN:
-		case SDL_SCANCODE_BRIGHTNESSDOWN:
-		case SDL_SCANCODE_BRIGHTNESSUP:
-		case SDL_SCANCODE_SELECT:
-			return;
-#endif // SDL_VERSION_ATLEAST( 2, 0, 0 )
 		case SDL_SCANCODE_UNKNOWN:
 		{
 			if( down ) Con_Reportf( "%s: Unknown scancode\n", __func__ );
@@ -259,15 +223,8 @@ static void SDLash_MouseEvent( SDL_MouseButtonEvent button )
 {
 	int down;
 
-#if SDL_VERSION_ATLEAST( 2, 0, 0 )
-	if( button.which == SDL_TOUCH_MOUSEID )
-		return;
-#endif
-
 	if( button.state == SDL_RELEASED )
 		down = 0;
-	else if( button.clicks >= 2 )
-		down = 2; // special state for double-click in UI
 	else
 		down = 1;
 
@@ -288,47 +245,16 @@ static void SDLash_MouseEvent( SDL_MouseButtonEvent button )
 	case SDL_BUTTON_X2:
 		IN_MouseEvent( 4, down );
 		break;
-#if ! SDL_VERSION_ATLEAST( 2, 0, 0 )
 	case SDL_BUTTON_WHEELUP:
 		IN_MWheelEvent( -1 );
 		break;
 	case SDL_BUTTON_WHEELDOWN:
 		IN_MWheelEvent( 1 );
 		break;
-#endif // ! SDL_VERSION_ATLEAST( 2, 0, 0 )
 	default:
 		Con_Printf( "Unknown mouse button ID: %d\n", button.button );
 	}
 }
-
-/*
-=============
-SDLash_InputEvent
-
-=============
-*/
-#if SDL_VERSION_ATLEAST( 2, 0, 0 )
-static void SDLash_InputEvent( SDL_TextInputEvent input )
-{
-	const char *text;
-
-	VGui_ReportTextInput( input.text );
-
-	for( text = input.text; *text; text++ )
-	{
-		int ch = (byte)*text;
-
-		// do not pass UTF-8 sequence into the engine, convert it here
-		if( !cls.accept_utf8 )
-			ch = Con_UtfProcessCharForce( ch );
-
-		if( !ch )
-			continue;
-
-		CL_CharEvent( ch );
-	}
-}
-#endif // SDL_VERSION_AT_LEAST( 2, 0, 0 )
 
 static void SDLash_ActiveEvent( int gain )
 {
@@ -344,13 +270,6 @@ static void SDLash_ActiveEvent( int gain )
 	}
 	else
 	{
-#if TARGET_OS_IPHONE
-		{
-			// Keep running if ftp server enabled
-			void IOS_StartBackgroundTask( void );
-			IOS_StartBackgroundTask();
-		}
-#endif
 		host.status = HOST_NOFOCUS;
 
 		if( cls.key_dest == key_game )
@@ -394,148 +313,12 @@ static void SDLash_EventHandler( SDL_Event *event )
 	case SDL_QUIT:
 		Sys_Quit( "caught SDL_QUIT" );
 		break;
-#if SDL_VERSION_ATLEAST( 2, 0, 0 )
-	case SDL_MOUSEWHEEL:
-		IN_MWheelEvent( event->wheel.y );
-		break;
-
-	/* Touch events */
-	case SDL_FINGERDOWN:
-	case SDL_FINGERUP:
-	case SDL_FINGERMOTION:
-	{
-		static int scale = 0;
-		touchEventType type;
-		float x, y, dx, dy;
-
-		if( event->type == SDL_FINGERDOWN )
-			type = event_down;
-		else if( event->type == SDL_FINGERUP )
-			type = event_up ;
-		else if( event->type == SDL_FINGERMOTION )
-			type = event_motion;
-		else break;
-
-		/*
-		SDL sends coordinates in [0..width],[0..height] values
-		on some devices
-		*/
-		if( !scale )
-		{
-			if( ( event->tfinger.x > 0 ) && ( event->tfinger.y > 0 ) )
-			{
-				if( ( event->tfinger.x > 2 ) && ( event->tfinger.y > 2 ) )
-				{
-					scale = 2;
-					Con_Reportf( "SDL reports screen coordinates, workaround enabled!\n");
-				}
-				else
-				{
-					scale = 1;
-				}
-			}
-		}
-
-		x = event->tfinger.x;
-		y = event->tfinger.y;
-		dx = event->tfinger.dx;
-		dy = event->tfinger.dy;
-
-		if( scale == 2 )
-		{
-			x /= (float)refState.width;
-			y /= (float)refState.height;
-			dx /= (float)refState.width;
-			dy /= (float)refState.height;
-		}
-
-		IN_TouchEvent( type, event->tfinger.fingerId, x, y, dx, dy );
-		break;
-	}
-
-	/* IME */
-	case SDL_TEXTINPUT:
-		SDLash_InputEvent( event->text );
-		break;
-
-	/* GameController API */
-	case SDL_CONTROLLERAXISMOTION:
-	case SDL_CONTROLLERBUTTONDOWN:
-	case SDL_CONTROLLERBUTTONUP:
-	case SDL_CONTROLLERDEVICEADDED:
-	case SDL_CONTROLLERDEVICEREMOVED:
-	case SDL_CONTROLLERTOUCHPADDOWN:
-	case SDL_CONTROLLERTOUCHPADMOTION:
-	case SDL_CONTROLLERTOUCHPADUP:
-	case SDL_CONTROLLERSENSORUPDATE:
-		SDLash_HandleGameControllerEvent( event );
-		break;
-
-	case SDL_WINDOWEVENT:
-		if( event->window.windowID != SDL_GetWindowID( host.hWnd ) )
-			return;
-
-		if( host.status == HOST_SHUTDOWN || Host_IsDedicated() )
-			break; // no need to activate
-
-		switch( event->window.event )
-		{
-		case SDL_WINDOWEVENT_MOVED:
-		{
-			char val[32];
-
-			Q_snprintf( val, sizeof( val ), "%d", event->window.data1 );
-			Cvar_DirectSet( &window_xpos, val );
-
-			Q_snprintf( val, sizeof( val ), "%d", event->window.data2 );
-			Cvar_DirectSet( &window_ypos, val );
-
-			if ( vid_fullscreen.value == WINDOW_MODE_WINDOWED )
-				Cvar_DirectSet( &vid_maximized, "0" );
-			break;
-		}
-		case SDL_WINDOWEVENT_MINIMIZED:
-			host.status = HOST_SLEEP;
-			Cvar_DirectSet( &vid_maximized, "0" );
-			VID_RestoreScreenResolution( );
-			break;
-		case SDL_WINDOWEVENT_RESTORED:
-			host.status = HOST_FRAME;
-			host.force_draw_version_time = host.realtime + FORCE_DRAW_VERSION_TIME;
-			Cvar_DirectSet( &vid_maximized, "0" );
-			if( vid_fullscreen.value == WINDOW_MODE_FULLSCREEN )
-				VID_SetMode();
-			break;
-		case SDL_WINDOWEVENT_FOCUS_GAINED:
-			SDLash_ActiveEvent( true );
-			break;
-		case SDL_WINDOWEVENT_FOCUS_LOST:
-			SDLash_ActiveEvent( false );
-			break;
-		case SDL_WINDOWEVENT_RESIZED:
-#if !XASH_MOBILE_PLATFORM
-			if( vid_fullscreen.value == WINDOW_MODE_WINDOWED )
-#endif
-			{
-				SDL_Window *wnd = SDL_GetWindowFromID( event->window.windowID );
-				VID_SaveWindowSize( event->window.data1, event->window.data2,
-					FBitSet( SDL_GetWindowFlags( wnd ), SDL_WINDOW_MAXIMIZED ) != 0 );
-			}
-			break;
-		case SDL_WINDOWEVENT_MAXIMIZED:
-			Cvar_DirectSet( &vid_maximized, "1" );
-			break;
-		default:
-			break;
-		}
-#else
 	case SDL_VIDEORESIZE:
-		VID_SaveWindowSize( event->resize.w, event->resize.h );
+		VID_SaveWindowSize( event->resize.w, event->resize.h, false );
 		break;
 	case SDL_ACTIVEEVENT:
 		SDLash_ActiveEvent( event->active.gain );
 		break;
-#endif
 	}
 }
 
@@ -549,12 +332,8 @@ void Platform_RunEvents( void )
 {
 	SDL_Event event;
 
-	while( !host.crashed && !host.shutdown_issued && SDL_PollEvent( &event ) )
+	while( host.status != HOST_CRASHED && !host.shutdown_issued && SDL_PollEvent( &event ) )
 		SDLash_EventHandler( &event );
-
-#if XASH_PSVITA
-	PSVita_InputUpdate();
-#endif
 }
 
 /*
@@ -573,5 +352,3 @@ void Platform_PreCreateMove( void )
 		SDL_ShowCursor( SDL_TRUE );
 	}
 }
-
-#endif //  defined( XASH_SDL ) && !XASH_DEDICATED

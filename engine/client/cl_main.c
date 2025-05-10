@@ -673,7 +673,7 @@ static void CL_CreateCmd( void )
 	}
 
 	// demo always have commands so don't overwrite them
-	if( !cls.demoplayback ) cl.cmd = &pcmd->cmd;
+	if( !cls.demoplayback ) cl.cmd = pcmd->cmd;
 
 	// predict all unacknowledged movements
 	CL_PredictMovement( false );
@@ -3677,7 +3677,7 @@ void CL_Shutdown( void )
 {
 	Con_Printf( "%s()\n", __func__ );
 
-	if( !host.crashed && cls.initialized )
+	if( host.status != HOST_CRASHED && cls.initialized )
 	{
 		Host_WriteOpenGLConfig ();
 		Host_WriteVideoConfig ();

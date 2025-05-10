@@ -128,9 +128,9 @@ dll_user_t *FS_FindLibrary( const char *dllname, qboolean directpath )
 
 static void COM_GenerateCommonLibraryName( const char *name, const char *ext, char *out, size_t size )
 {
-#if ( XASH_WIN32 || XASH_LINUX || XASH_APPLE ) && XASH_X86
+#if ( XASH_WIN32 || ( XASH_LINUX && !XASH_ANDROID ) || XASH_APPLE ) && XASH_X86
 	Q_snprintf( out, size, "%s.%s", name, ext );
-#elif ( XASH_WIN32 || XASH_LINUX || XASH_APPLE )
+#elif XASH_WIN32 || ( XASH_LINUX && !XASH_ANDROID ) || XASH_APPLE
 	Q_snprintf( out, size, "%s_%s.%s", name, Q_buildarch(), ext );
 #else
 	Q_snprintf( out, size, "%s_%s_%s.%s", name, Q_buildos(), Q_buildarch(), ext );
@@ -185,16 +185,12 @@ static void COM_GenerateServerLibraryPath( char *out, size_t size )
 {
 #ifdef XASH_INTERNAL_GAMELIBS // assuming library loader knows where to get libraries
 	Q_strncpy( out, "server", size );
-#elif ( XASH_WIN32 || XASH_LINUX || XASH_APPLE ) && XASH_X86
-
-#if XASH_WIN32
+#elif XASH_X86 && XASH_WIN32
 	Q_strncpy( out, GI->game_dll, size );
-#elif XASH_APPLE
+#elif XASH_X86 && XASH_APPLE
 	Q_strncpy( out, GI->game_dll_osx, size );
-#else // XASH_LINUX
+#elif XASH_X86 && XASH_LINUX && !XASH_ANDROID
 	Q_strncpy( out, GI->game_dll_linux, size );
-#endif
-
 #else
 	string dllpath;
 	const char *ext;
@@ -203,7 +199,7 @@ static void COM_GenerateServerLibraryPath( char *out, size_t size )
 	Q_strncpy( dllpath, GI->game_dll, sizeof( dllpath ) );
 #elif XASH_APPLE
 	Q_strncpy( dllpath, GI->game_dll_osx, sizeof( dllpath ) );
-#else // XASH_APPLE
+#else
 	Q_strncpy( dllpath, GI->game_dll_linux, sizeof( dllpath ) );
 #endif
 
@@ -228,7 +224,14 @@ void COM_GetCommonLibraryPath( ECommonLibraryType eLibType, char *out, size_t si
 	switch( eLibType )
 	{
 	case LIBRARY_GAMEUI:
-		COM_GenerateClientLibraryPath( "menu", out, size );
+		if( COM_CheckStringEmpty( host.menulib ))
+		{
+			Q_strncpy( out, host.menulib, size );
+		}
+		else
+		{
+			COM_GenerateClientLibraryPath( "menu", out, size );
+		}
 		break;
 	case LIBRARY_CLIENT:
 		if( COM_CheckStringEmpty( host.clientlib ))

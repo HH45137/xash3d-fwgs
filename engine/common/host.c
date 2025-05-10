@@ -177,6 +177,7 @@ static void Sys_PrintUsage( const char *exename )
 	O("-dll <path>        ", "override server DLL path")
 #if !XASH_DEDICATED
 	O("-clientlib <path>  ", "override client DLL path")
+	O("-menulib <path>    ", "override menu DLL path")
 	O("-console           ", "run engine with console enabled")
 	O("-toconsole         ", "run engine witn console open")
 	O("-oldfont           ", "enable unused Quake font in Half-Life")
@@ -1354,7 +1355,7 @@ int EXPORT Host_Main( int argc, char **argv, const char *progname, int bChangeGa
 #endif // XASH_ANDROID
 
 	// main window message loop
-	while( !host.crashed )
+	while( host.status != HOST_CRASHED )
 	{
 		newtime = Sys_DoubleTime ();
 		COM_Frame( newtime - oldtime );

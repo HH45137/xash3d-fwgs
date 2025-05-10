@@ -126,23 +126,34 @@ returns username for current profile
 */
 const char *Sys_GetCurrentUser( void )
 {
+	// TODO: move to platform
 #if XASH_WIN32
-	static string	s_userName;
-	unsigned long size = sizeof( s_userName );
+	static wchar_t sw_userName[MAX_STRING];
+	DWORD size = ARRAYSIZE( sw_userName );
 
-	if( GetUserName( s_userName, &size ))
+	if( GetUserNameW( sw_userName, &size ) && sw_userName[0] != 0 )
+	{
+		static char s_userName[MAX_STRING * 4];
+
+		// set length to -1, so it will null terminate
+		WideCharToMultiByte( CP_UTF8, 0, sw_userName, -1, s_userName, sizeof( s_userName ), NULL, NULL );
 		return s_userName;
+	}
 #elif XASH_PSVITA
 	static string username;
 	sceAppUtilSystemParamGetString( SCE_SYSTEM_PARAM_ID_USERNAME, username, sizeof( username ) - 1 );
 	if( COM_CheckStringEmpty( username ))
 		return username;
 #elif XASH_POSIX && !XASH_ANDROID && !XASH_NSWITCH
-	uid_t uid = geteuid();
-	struct passwd *pw = getpwuid( uid );
+	static string username;
+	struct passwd *pw = getpwuid( geteuid( ));
 
-	if( pw )
-		return pw->pw_name;
+	// POSIX standard says pw _might_ point to static area, so let's make a copy
+	if( pw && COM_CheckString( pw->pw_name ))
+	{
+		Q_strncpy( username, pw->pw_name, sizeof( username ));
+		return username;
+	}
 #endif
 	return "Player";
 }
