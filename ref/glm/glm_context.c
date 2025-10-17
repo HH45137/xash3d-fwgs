@@ -9,6 +9,7 @@
 #include "cvardef.h"
 #include "xash3d_mathlib.h"
 #include "ref_api.h"
+#include "glad.h"
 
 // OpenGL 4.6 specific defines
 #define GLM_MAJOR_VERSION 4

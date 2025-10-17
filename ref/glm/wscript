@@ -11,9 +11,13 @@ def build(bld):
     bld.shlib(
         target = 'ref_glm',
         source = [
-            'glm_context.c'
+            'glm_context.c',
+            'glad/glad.c'
         ],
-        includes = '.',
+        includes = [
+            '.',
+            'glad/',
+        ],
         use = ['engine_includes', 'werror', 'public', 'M'],
         defines = [
             'REF_DLL=1',
