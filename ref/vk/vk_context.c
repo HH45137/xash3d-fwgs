@@ -514,4 +514,14 @@ void VK_GL_ClearExtensions( void )
 	// Not applicable to Vulkan
 }
 
+qboolean VK_Mod_ProcessRenderData( model_t *mod, qboolean create, const byte *buffer, size_t buffersize )
+{
+	return true;
+}
+
+void VK_Mod_StudioLoadTextures( model_t *mod, void *data )
+{
+	;
+}
+
 #endif // XASH_VULKAN

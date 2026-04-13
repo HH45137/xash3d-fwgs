@@ -133,7 +133,7 @@ void VK_DestroyTextureImage( vk_texture_t *tex )
  * - Allocate texture slot
  * - Upload to GPU
  */
-int VK_LoadTexture( const char *name, const byte *buf, size_t size, int flags )
+int VK_GL_LoadTexture( const char *name, const byte *buf, size_t size, int flags )
 {
 	// TODO: Implement VK_LoadTexture
 	return 0;
@@ -147,7 +147,7 @@ int VK_LoadTexture( const char *name, const byte *buf, size_t size, int flags )
  * - Allocate texture slot
  * - Create Vulkan resources
  */
-int VK_CreateTexture( const char *name, int width, int height, const void *buffer, texFlags_t flags )
+int VK_GL_CreateTexture( const char *name, int width, int height, const void *buffer, texFlags_t flags )
 {
 	// TODO: Implement VK_CreateTexture
 	return 0;
@@ -159,7 +159,7 @@ int VK_CreateTexture( const char *name, int width, int height, const void *buffe
  * TODO: Implement
  * - Similar to LoadTexture but for arrays
  */
-int VK_LoadTextureArray( const char **names, int flags )
+int VK_GL_LoadTextureArray( const char **names, int flags )
 {
 	// TODO: Implement VK_LoadTextureArray
 	return 0;
@@ -170,7 +170,7 @@ int VK_LoadTextureArray( const char **names, int flags )
  *
  * TODO: Implement
  */
-int VK_CreateTextureArray( const char *name, int width, int height, int depth, const void *buffer, texFlags_t flags )
+int VK_GL_CreateTextureArray( const char *name, int width, int height, int depth, const void *buffer, texFlags_t flags )
 {
 	// TODO: Implement VK_CreateTextureArray
 	return 0;
@@ -293,7 +293,7 @@ void VK_ProcessTexture( int texnum, float gamma, int topColor, int bottomColor )
  *
  * TODO: Implement
  */
-int VK_LoadTextureFromBuffer( const char *name, rgbdata_t *pic, texFlags_t flags, qboolean update )
+int VK_GL_LoadTextureFromBuffer( const char *name, rgbdata_t *pic, texFlags_t flags, qboolean update )
 {
 	// TODO: Implement VK_LoadTextureFromBuffer
 	return 0;
